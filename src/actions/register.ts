@@ -11,14 +11,26 @@ import { AuthError } from 'next-auth';
 import * as z from 'zod';
 
 export const register = async (values: z.infer<typeof RegisterSchema>) => {
+  // Server-side logging
   console.log('📝 Registration attempt started:', { email: values.email, name: values.name });
+  
+  // Also log to help with debugging
+  console.log('🔍 Environment check:', {
+    hasDatabase: !!process.env.DATABASE_URL,
+    hasAuthSecret: !!process.env.AUTH_SECRET,
+    nodeEnv: process.env.NODE_ENV
+  });
   
   try {
     const validatedFields = RegisterSchema.safeParse(values);
 
     if (!validatedFields.success) {
       console.log('❌ Registration validation failed:', validatedFields.error);
-      return { error: 'Invalid fields' };
+      return { 
+        error: 'Invalid fields', 
+        debug: 'Validation failed',
+        details: validatedFields.error.issues 
+      };
     }
 
     const { email, password, name } = validatedFields.data;
@@ -28,27 +40,52 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     console.log('🔍 Checking if user already exists...');
-    const existingUser = await db.user.findUnique({
-      where: {
-        email,
-      },
-    });
+    
+    // Test database connection
+    try {
+      const existingUser = await db.user.findUnique({
+        where: {
+          email,
+        },
+      });
 
-    if (existingUser) {
-      console.log('❌ User already exists with this email');
-      return { error: 'Email already in use' };
+      if (existingUser) {
+        console.log('❌ User already exists with this email');
+        return { 
+          error: 'Email already in use',
+          debug: 'User exists'
+        };
+      }
+      console.log('✅ User does not exist, proceeding with creation');
+    } catch (dbError) {
+      console.error('❌ Database connection failed during user lookup:', dbError);
+      return { 
+        error: 'Database connection failed', 
+        debug: 'DB lookup failed',
+        details: dbError instanceof Error ? dbError.message : 'Unknown DB error'
+      };
     }
 
     console.log('👤 Creating new user in database...');
     // Create user in database
-    const newUser = await db.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    });
-    console.log('✅ User created successfully:', { id: newUser.id, email: newUser.email });
+    let newUser;
+    try {
+      newUser = await db.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+        },
+      });
+      console.log('✅ User created successfully:', { id: newUser.id, email: newUser.email });
+    } catch (createError) {
+      console.error('❌ Failed to create user:', createError);
+      return { 
+        error: 'Failed to create user account', 
+        debug: 'User creation failed',
+        details: createError instanceof Error ? createError.message : 'Unknown create error'
+      };
+    }
 
     // Send verification email (don't fail if this errors)
     console.log('📧 Attempting to send verification email...');
@@ -83,10 +120,16 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
         switch (error.type) {
           case 'CredentialsSignin':
             console.log('❌ Credentials signin failed during auto-login');
-            return { error: 'Registration successful but failed to log in. Please try logging in manually.' };
+            return { 
+              error: 'Registration successful but failed to log in. Please try logging in manually.',
+              debug: 'Auto-login credentials failed'
+            };
           default:
             console.log('❌ Unknown auth error during auto-login:', error.type);
-            return { error: 'Registration successful but something went wrong during login. Please try logging in manually.' };
+            return { 
+              error: 'Registration successful but something went wrong during login. Please try logging in manually.',
+              debug: `Auto-login auth error: ${error.type}`
+            };
         }
       }
       console.log('❌ Non-AuthError during auto sign-in:', error);
@@ -101,6 +144,11 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     });
-    return { error: 'Something went wrong during registration. Please try again.' };
+    
+    return { 
+      error: 'Something went wrong during registration. Please try again.',
+      debug: 'Unexpected error',
+      details: error instanceof Error ? error.message : 'Unknown error type'
+    };
   }
 }; 
