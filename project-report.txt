@@ -1,0 +1,61 @@
+# Project Progress Report
+
+This document tracks the implementation status of features defined in `project-goals.txt`.
+
+---
+
+## Phase 1: Core Functionality (MVP)
+
+**Overall Status:** In Progress
+
+### Key Features:
+
+- **User Authentication (Basic):**
+  - [x] Simple email/password login (Auth.js)
+  - **Status:** Completed
+
+- **Notion Integration Onboarding:**
+  - [ ] Guide for creating Notion integration & obtaining token
+  - [ ] Secure storage for Notion tokens
+  - **Status:** Pending
+
+- **Third-Party API Connection (Basic):**
+  - [ ] UI for API URL and headers
+  - [ ] "Fetch Sample Data" functionality
+  - **Status:** Pending
+
+- **Data Mapping GUI (Flat JSON):**
+  - [ ] Display fetched sample JSON
+  - [ ] Map JSON fields to Notion properties (Text, Number, URL, Checkbox, Date)
+  - [ ] Allow creating a new Notion DB or selecting an existing one
+  - **Status:** Pending
+
+- **Manual Sync Trigger:**
+  - [ ] "Sync Now" button to push data
+  - **Status:** Pending
+
+- **Error Handling:**
+  - [ ] Basic error messages for API calls and mapping
+  - **Status:** Pending
+
+- **Tech Stack Setup:**
+  - [x] Next.js + Tailwind CSS + Redux
+  - [x] Next.js API routes for backend
+  - [x] PostgreSQL + Prisma
+  - [x] Auth.js v5
+  - [x] Zod for validation
+  - [x] Nodemailer for emails
+  - [x] Sonner for toasts
+  - **Status:** Completed
+
+---
+
+## Phase 2: Automation & Enhanced User Experience
+
+**Overall Status:** Not Started
+
+---
+
+## Phase 3: Advanced Features & Production Readiness
+
+**Overall Status:** Not Started 

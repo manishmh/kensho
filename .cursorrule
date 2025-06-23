@@ -1,0 +1,36 @@
+### Project Rules
+
+#### Pre-Push Checklist (MANDATORY)
+Before ANY git push or commit, ALWAYS run these commands in order:
+
+1.  **Frontend Checks (RUN ALL IN ONE COMMAND):**
+    ```bash
+    cd frontend 
+    npm run typecheck && npm run build
+    ```
+    **NEVER run these separately - always run all three together in one command!**
+
+2.  **Security Checks:**
+    *   Never commit service account keys, API keys, or secrets.
+    *   Always check .gitignore patterns for sensitive files.
+    *   Verify no hardcoded credentials in code.
+
+#### Frontend (Next.js)
+*   Use App Router (not Pages Router).
+*   Keep components in `src/components/`.
+*   Use proper TypeScript interfaces in `src/types/`.
+*   Environment variables must start with `NEXT_PUBLIC_` for client-side access.
+*   Use proper loading and error states for all async operations.
+*   Do not blindly trust the lint check of `useEffect`. Some checks suggest adding dependencies that can cause infinite loops. Be careful and test thoroughly.
+
+#### Backend & Data
+*   **Backend Response is Source of Truth:** After a successful API call that modifies data on the backend (PUT, POST, PATCH), the backend's response MUST include the full, updated (or newly created) resource object.
+*   **Immediate Frontend State Replacement:** Upon receiving this updated resource from the backend, immediately update the corresponding frontend state by replacing the old data with the new, authoritative data from the response.
+*   **No Page Refresh:** Never rely on a page refresh to show updated data. The UI must reflect changes instantly due to state reactivity.
+*   **Global State Awareness:** If the updated data resides in a global state (e.g., Redux, Zustand, shared Context), ensure the update propagates correctly so all consuming components re-render automatically.
+*   **Consider Optimistic UI (with rollback):** For actions where immediate feedback is critical and success is highly probable, consider an optimistic UI update *before* the backend response, paired with a robust rollback mechanism if the API call fails.
+*   **Leverage Query Libraries:** For complex data management, utilize libraries like TanStack Query or SWR. Configure them to automatically update cache and/or invalidate queries upon successful mutations, ensuring UI consistency.
+
+#### Project Management
+*   Do not create `.md` files for descriptions. Use `.txt` files instead.
+*   Maintain a `project-report.txt` file that tracks the progress of features implemented compared to `project-goals.txt`.

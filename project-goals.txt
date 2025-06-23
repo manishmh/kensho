@@ -1,0 +1,123 @@
+Project Roadmap: Notion API Dashboard Integration Tool
+Overall Goal: To create a flexible, user-friendly platform that allows users to map and sync data from any REST API into Notion databases.
+
+Phase 1: Core Functionality (MVP)
+Goal: Establish the fundamental ability to connect a single external API, map its data, and push it into a Notion database on a manual trigger.
+
+Key Features:
+
+User Authentication (Basic):
+
+Simple email/password login  for user management.
+Tech: Auth.js (NextAuth.js) for quick setup
+
+Notion Integration Onboarding:
+Guide users to create a Notion integration and obtain their "Internal Integration Token."
+Prompt them to share specific databases/pages with the integration.
+Tech: Frontend UI with clear instructions and input fields. Store Notion tokens securely server-side.
+Third-Party API Connection (Basic):
+
+Input field for users to paste a single API URL (e.g., https://api.openweathermap.org/data/2.5/weather?q=Delhi&appid=YOUR_API_KEY).
+Input field for headers (optional, for simple API keys).
+Button to "Fetch Sample Data."
+Tech: axios or node-fetch on the backend to make requests to the user-provided API. Frontend form.
+Data Mapping GUI (Flat JSON):
+
+Display the fetched sample JSON in a readable format.
+Allow users to select top-level JSON fields and map them to Notion database properties.
+Supported Notion Property Types (MVP): Text, Number, URL, Checkbox, Date.
+Supported External API Data Types: String, Number, Boolean, Date string.
+Allow creating a new Notion database with mapped properties, or selecting an existing one.
+Tech: React frontend with dynamic form generation (e.g., using a library like react-json-editor-ajrm or building a custom recursive component to traverse JSON). Notion API SDK (@notionhq/client) for databases.create and databases.query to get existing properties.
+Manual Sync Trigger:
+
+A button to "Sync Now" that pushes the mapped data to the connected Notion database.
+Tech: Backend endpoint that receives the sync request, fetches data from the third-party API, transforms it based on mapping, and uses pages.create or pages.update from the Notion API SDK.
+Error Handling: Basic error messages if API calls fail or data mapping is incorrect.
+Tech Stack Decisions (MVP):
+
+Frontend: next.js + Tailwind CSS + redux
+Backend: Next.js API routes
+Database: PostgreSQL 
+Notion SDK: @notionhq/client.
+API Requests: axios 
+Security: dotenv for environment variables, basic input validation. For API key storage, encrypt them in the database using a library like crypto or rely on managed services that handle encryption at rest.
+
+
+
+
+Phase 2: Automation & Enhanced User Experience
+Goal: Introduce scheduled syncing, improve data mapping flexibility, and refine the user interface.
+
+Key Features:
+
+Auto-Sync Scheduler:
+
+Allow users to set sync intervals (e.g., every 5 minutes, hourly, daily at X time).
+Enable/disable sync for each integration.
+Tech: node-cron for server-side scheduling. For production, consider a more robust job queue system like BullMQ (with Redis) or cloud-native solutions like AWS Lambda/Google Cloud Functions triggered by cron events, especially if scaling beyond a single server.
+Persistence: Store sync schedules in the PostgreSQL database.
+Advanced Data Mapping GUI:
+
+Nested JSON Support: Allow users to navigate into nested JSON objects (e.g., main.temp, weather[0].description).
+Notion Property Type Inference & Suggestions: Based on the fetched API data type, suggest suitable Notion property types (e.g., number for temp, rich text for description, date for timestamp).
+More Notion Property Types: Add support for Multi-select, Select (with option creation), Date (with time parsing), and URL.
+Tech: Enhance the React dynamic form. This will likely involve a custom tree-like structure for displaying JSON and drag-and-drop or click-to-map interactions. Use Notion API SDK for retrieving database schemas to match property types.
+Robust Error Handling & Logging:
+
+Log all sync attempts (success/failure, timestamps, error messages) to the database.
+Display these logs in a "Sync History" section for each integration.
+Implement retry mechanisms for Notion API rate limits (HTTP 429 errors). Notion recommends respecting the Retry-After header.
+Tech: Winston or Pino for server-side logging. Implement a custom middleware for Notion API calls to handle 429 responses with exponential backoff.
+Dynamic Plugin / Integration Management:
+
+A clean dashboard to view all created integrations.
+Edit, pause, delete individual integrations.
+Tech: React frontend components for listing and managing integrations. Backend API endpoints for CRUD operations on integration configurations.
+Tech Stack Additions:
+
+Scheduling: node-cron (for simplicity in this phase) or BullMQ (for robustness).
+Logging: Winston.
+Optional (for robust scheduling/background jobs): Redis (if using BullMQ).
+
+
+
+
+Phase 3: Advanced Features & Production Readiness
+Goal: Enhance the platform with bonus features, improve security, and prepare for a public launch.
+
+Key Features:
+
+User-Friendly OAuth for External APIs (e.g., Spotify, GitHub):
+
+Instead of just API keys, implement OAuth flows for popular services where applicable.
+Tech: Auth.js or custom OAuth integrations using passport-oauth2.
+Notion Database Update Logic (Smart Sync):
+
+Allow users to define a "primary key" from the external API data.
+If a Notion page with that key already exists, update it instead of creating a new one. This is crucial for live dashboards.
+Tech: Query Notion database (databases.query with filters) to check for existing pages based on the mapped primary key. Use pages.update if found, pages.create otherwise. This requires careful consideration of Notion's rate limits and update behavior.
+Notifications (Bonus):
+
+Email notifications when a sync fails consistently.
+Potentially, push a notification into a Notion page itself (e.g., a "Sync Log" page).
+Tech: Nodemailer (for email) or Notion API to create new blocks/pages for notifications.
+Template Marketplace (Bonus - Initial Templates):
+
+Provide pre-built templates for common integrations (e.g., OpenWeather, Binance).
+Users can select a template, and it pre-fills the API URL, sample JSON, and mapping.
+Tech: Stored configurations in your database for these templates, UI to display and apply them.
+Security & Scalability Enhancements:
+
+API Key Encryption: Ensure all third-party API keys stored in your database are robustly encrypted at rest (e.g., AES-256).
+Rate Limiting: Implement rate limiting on your own API endpoints to prevent abuse.
+Horizontal Scaling: Design your backend to be stateless for easier horizontal scaling (if using Express). Consider serverless functions for sync jobs.
+Robust Deployment: Implement CI/CD pipelines (e.g., GitHub Actions) for automated deployment to Vercel/Render/Fly.io.
+Public Dashboard / Shareable Data (Bonus):
+
+Allow users to generate a public, read-only URL for a Notion database or a filtered view of it, rendered by your application. This bypasses Notion's sharing limitations for non-Notion users.
+Tech: Dedicated public routes on your backend, read-only Notion API calls, simple frontend rendering of the Notion data.
+Tech Stack Additions:
+
+Encryption: Node's built-in crypto module.
+Email: Nodemailer or a service like SendGrid/Mailgun.
