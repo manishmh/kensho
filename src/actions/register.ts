@@ -4,7 +4,6 @@ import { signIn } from '@/auth/auth';
 import { db } from '@/lib/db';
 import { sendVerificationEmail } from '@/lib/mail';
 import { generateVerificationToken } from '@/lib/tokens';
-import { DEFAULT_LOGIN_REDIRECT } from '@/routes';
 import { RegisterSchema } from '@/schemas';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
@@ -98,15 +97,22 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
       // Continue with registration even if email fails
     }
 
-    // Try to sign in the user automatically
+    // Try to sign in the user automatically (without redirect)
     console.log('🔑 Attempting automatic sign-in after registration...');
     try {
       await signIn('credentials', {
         email,
         password,
-        redirectTo: DEFAULT_LOGIN_REDIRECT,
+        redirect: false, // Don't redirect automatically
       });
       console.log('✅ Automatic sign-in successful');
+      
+      // Return success with redirect flag for client-side handling
+      return { 
+        success: 'Account created and logged in successfully!',
+        shouldRedirect: true,
+        redirectTo: '/dashboard'
+      };
     } catch (error) {
       console.log('❌ Automatic sign-in failed:', error);
       
@@ -121,23 +127,42 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
           case 'CredentialsSignin':
             console.log('❌ Credentials signin failed during auto-login');
             return { 
-              error: 'Registration successful but failed to log in. Please try logging in manually.',
+              success: 'Account created successfully but failed to log in automatically. Please try logging in manually.',
+              shouldRedirect: true,
+              redirectTo: '/login',
               debug: 'Auto-login credentials failed'
             };
           default:
             console.log('❌ Unknown auth error during auto-login:', error.type);
             return { 
-              error: 'Registration successful but something went wrong during login. Please try logging in manually.',
+              success: 'Account created successfully but something went wrong during automatic login. Please try logging in manually.',
+              shouldRedirect: true,
+              redirectTo: '/login',
               debug: `Auto-login auth error: ${error.type}`
             };
         }
       }
-      console.log('❌ Non-AuthError during auto sign-in:', error);
-      throw error;
+      
+      // If it's a non-AuthError, it might be the redirect error we're trying to avoid
+      if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+        console.log('✅ Redirect error caught - this means login was successful but redirect was handled');
+        return { 
+          success: 'Account created and logged in successfully!',
+          shouldRedirect: true,
+          redirectTo: '/dashboard'
+        };
+      }
+      
+      console.log('❌ Unexpected error during auto sign-in:', error);
+      return { 
+        success: 'Account created successfully but automatic login failed. Please try logging in manually.',
+        shouldRedirect: true,
+        redirectTo: '/login',
+        debug: 'Unexpected auto-login error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
 
-    console.log('🎉 Registration and auto-login completed successfully!');
-    return { success: 'Account created and logged in successfully!' };
   } catch (error) {
     console.error('💥 Unexpected error in registration:', {
       error: error,

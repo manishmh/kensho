@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { RegisterSchema } from "@/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -25,6 +26,7 @@ export const RegisterForm = () => {
   const [success, setSuccess] = useState<string | undefined>("");
   const [debugInfo, setDebugInfo] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -56,6 +58,16 @@ export const RegisterForm = () => {
             } | Details: ${data.details || "No details"}`;
             setDebugInfo(debugText);
             console.log("🔍 Client: Debug info:", debugText);
+          }
+
+          // Handle redirect based on response
+          if (data.success && data.shouldRedirect && data.redirectTo) {
+            console.log(
+              `✅ Registration successful, redirecting to ${data.redirectTo}...`
+            );
+            setTimeout(() => {
+              router.push(data.redirectTo);
+            }, 2000); // 2 second delay to show success message
           }
         })
         .catch((clientError) => {
