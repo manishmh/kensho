@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app/**": {
+      "includeFiles": "node_modules/.prisma/client/**"
+    }
+  },
+  "crons": []
+} 
