@@ -24,7 +24,6 @@ import * as z from "zod";
 export const RegisterForm = () => {
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
-  const [debugInfo, setDebugInfo] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -38,47 +37,24 @@ export const RegisterForm = () => {
   });
 
   const onSubmit = (values: z.infer<typeof RegisterSchema>) => {
-    console.log("🚀 Client: Starting registration for:", values.email);
     setError("");
     setSuccess("");
-    setDebugInfo("");
 
     startTransition(() => {
       register(values)
         .then((data) => {
-          console.log("🔄 Client: Registration response received:", data);
-
           setError(data.error);
           setSuccess(data.success);
 
-          // Show debug info in development or if there's an error
-          if (data.debug || data.details) {
-            const debugText = `Debug: ${
-              data.debug || "No debug info"
-            } | Details: ${data.details || "No details"}`;
-            setDebugInfo(debugText);
-            console.log("🔍 Client: Debug info:", debugText);
-          }
-
           // Handle redirect based on response
           if (data.success && data.shouldRedirect && data.redirectTo) {
-            console.log(
-              `✅ Registration successful, redirecting to ${data.redirectTo}...`
-            );
             setTimeout(() => {
               router.push(data.redirectTo);
             }, 2000); // 2 second delay to show success message
           }
         })
-        .catch((clientError) => {
-          console.error(
-            "💥 Client: Registration failed with error:",
-            clientError
-          );
+        .catch(() => {
           setError("Client-side error occurred");
-          setDebugInfo(
-            `Client error: ${clientError.message || "Unknown client error"}`
-          );
         });
     });
   };
@@ -135,13 +111,6 @@ export const RegisterForm = () => {
           </div>
           <FormError message={error} />
           <FormSuccess message={success} />
-          {debugInfo && (
-            <div className="bg-yellow-500/15 p-3 rounded-md text-sm text-yellow-600">
-              <p>
-                <strong>Debug Info:</strong> {debugInfo}
-              </p>
-            </div>
-          )}
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Creating account..." : "Create an account"}
           </Button>

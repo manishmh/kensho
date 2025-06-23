@@ -20,76 +20,43 @@ export const {
   providers: [
     Credentials({
       async authorize(credentials) {
-        console.log('🔐 NextAuth Credentials authorize called with:', {
-          email: credentials?.email,
-          hasPassword: !!credentials?.password
-        });
-
         const validatedFields = LoginSchema.safeParse(credentials);
 
-        if (!validatedFields.success) {
-          console.log('❌ NextAuth validation failed:', validatedFields.error);
-          return null;
+        if (validatedFields.success) {
+          const { email, password } = validatedFields.data;
+
+          const user = await db.user.findUnique({ where: { email } });
+          if (!user || !user.password) return null;
+
+          const passwordsMatch = await bcrypt.compare(password, user.password);
+
+          if (passwordsMatch) {
+            return user;
+          }
         }
 
-        console.log('✅ NextAuth fields validated');
-
-        const { email, password } = validatedFields.data;
-
-        console.log('🔍 NextAuth fetching user from database...');
-        const user = await db.user.findUnique({ where: { email } });
-        
-        if (!user) {
-          console.log('❌ NextAuth: User not found in database');
-          return null;
-        }
-
-        if (!user.password) {
-          console.log('❌ NextAuth: User found but no password');
-          return null;
-        }
-
-        console.log('✅ NextAuth: User found, comparing passwords...');
-        const passwordsMatch = await bcrypt.compare(password, user.password);
-
-        if (!passwordsMatch) {
-          console.log('❌ NextAuth: Password comparison failed');
-          return null;
-        }
-
-        console.log('✅ NextAuth: Password match successful, returning user');
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+        return null;
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      console.log('🔄 NextAuth JWT callback:', { 
-        hasToken: !!token, 
-        hasUser: !!user,
-        userId: user?.id 
-      });
-      
-      if (user?.id) {
-        token.id = user.id;
+    async session({ token, session }) {
+      if (token.sub && session.user) {
+        session.user.id = token.sub;
       }
-      return token;
-    },
-    async session({ session, token }) {
-      console.log('🔄 NextAuth Session callback:', { 
-        hasSession: !!session, 
-        hasToken: !!token,
-        tokenId: token?.id 
-      });
-      
-      if (token?.id) {
-        session.user.id = token.id as string;
-      }
+
       return session;
+    },
+    async jwt({ token }) {
+      if (!token.sub) return token;
+
+      const existingUser = await db.user.findUnique({
+        where: { id: token.sub },
+      });
+
+      if (!existingUser) return token;
+
+      return token;
     },
   },
   events: {
