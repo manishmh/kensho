@@ -3,7 +3,7 @@
  * These routes do not require authentication
  * @type {string[]}
  */
-export const publicRoutes: string[] = ['/'];
+export const publicRoutes: string[] = ['/about'];
 
 /**
  * An array of routes that are used for authentication
@@ -31,4 +31,4 @@ export const apiAuthPrefix: string = '/api/auth';
  * The default redirect path after logging in
  * @type {string}
  */
-export const DEFAULT_LOGIN_REDIRECT: string = '/dashboard'; 
+export const DEFAULT_LOGIN_REDIRECT: string = "/"; 

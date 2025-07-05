@@ -7,7 +7,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Notion Syncer",
+  title: "Kensho",
   description: "Sync data from any API to your Notion databases.",
 };
 
@@ -20,11 +20,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <StoreProvider>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+          <div className="min-h-screen bg-white">
             <ToasterProvider />
-            <main className="min-h-screen flex items-center justify-center p-4">
-              {children}
-            </main>
+            <main className="min-h-screen">{children}</main>
           </div>
         </StoreProvider>
       </body>

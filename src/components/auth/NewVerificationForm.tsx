@@ -1,7 +1,7 @@
 "use client";
 
 import { newVerification } from "@/actions/new-verification";
-import { AuthCard } from "@/components/auth/AuthCard";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { BeatLoader } from "react-spinners";
@@ -37,16 +37,26 @@ export const NewVerificationForm = () => {
   }, [onSubmit]);
 
   return (
-    <AuthCard
-      headerLabel="Confirming your verification"
-      backButtonLabel="Back to login"
-      backButtonHref="/login"
-    >
-      <div className="flex items-center w-full justify-center">
-        {!success && !error && <BeatLoader />}
+    <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">VERIFICATION</h1>
+        <p className="text-gray-600">Confirming your email verification</p>
+      </div>
+
+      <div className="flex items-center w-full justify-center mb-6">
+        {!success && !error && <BeatLoader color="#374151" />}
         <FormSuccess message={success} />
         {!success && <FormError message={error} />}
       </div>
-    </AuthCard>
+
+      <div className="text-center">
+        <Link
+          href="/login"
+          className="text-gray-600 hover:text-gray-900 font-medium"
+        >
+          Back to login
+        </Link>
+      </div>
+    </div>
   );
 };

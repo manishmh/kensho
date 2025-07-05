@@ -4,6 +4,7 @@ import { signIn } from '@/auth/auth';
 import { db } from '@/lib/db';
 import { sendVerificationEmail } from '@/lib/mail';
 import { generateVerificationToken } from '@/lib/tokens';
+import { DEFAULT_LOGIN_REDIRECT } from '@/routes';
 import { RegisterSchema } from '@/schemas';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
@@ -57,7 +58,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
       return { 
         success: 'Account created and logged in successfully!',
         shouldRedirect: true,
-        redirectTo: '/dashboard'
+        redirectTo: DEFAULT_LOGIN_REDIRECT || '/'
       };
     } catch (error) {
       if (error instanceof AuthError) {
@@ -82,7 +83,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
         return { 
           success: 'Account created and logged in successfully!',
           shouldRedirect: true,
-          redirectTo: '/dashboard'
+          redirectTo: DEFAULT_LOGIN_REDIRECT || '/'
         };
       }
       

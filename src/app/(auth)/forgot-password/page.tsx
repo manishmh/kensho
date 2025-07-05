@@ -1,7 +1,12 @@
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ResetForm } from "@/components/auth/ResetForm";
 
 const ForgotPasswordPage = () => {
-  return <ResetForm />;
+  return (
+    <AuthLayout>
+      <ResetForm />
+    </AuthLayout>
+  );
 };
 
 export default ForgotPasswordPage;

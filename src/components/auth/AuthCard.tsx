@@ -24,10 +24,10 @@ export const AuthCard = ({
   showSocial,
 }: CardWrapperProps) => {
   return (
-    <Card className="w-[400px] shadow-xl border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+    <Card className="w-[400px] shadow-lg border border-gray-200 bg-white">
       <CardHeader className="space-y-1 pb-4">
         <div className="w-full flex flex-col gap-y-4 items-center justify-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center">
             <svg
               className="w-6 h-6 text-white"
               fill="none"
@@ -43,12 +43,8 @@ export const AuthCard = ({
             </svg>
           </div>
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-              Notion Syncer
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
-              {headerLabel}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">Kensho</h1>
+            <p className="text-gray-600 text-sm font-medium">{headerLabel}</p>
           </div>
         </div>
       </CardHeader>
@@ -56,7 +52,7 @@ export const AuthCard = ({
       {showSocial && <CardFooter>{/* Social Login Buttons */}</CardFooter>}
       <CardFooter className="pt-4">
         <Link href={backButtonHref} className="w-full">
-          <button className="w-full text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer font-medium">
+          <button className="w-full text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer font-medium">
             {backButtonLabel}
           </button>
         </Link>
