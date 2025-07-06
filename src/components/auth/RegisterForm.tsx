@@ -42,15 +42,22 @@ export const RegisterForm = () => {
     startTransition(() => {
       register(values)
         .then((data) => {
-          setError(data.error);
-          setSuccess(data.success);
-
-          // Handle redirect based on response
-          if (data.success && data.shouldRedirect && data.redirectTo) {
-            setTimeout(() => {
-              router.push(data.redirectTo);
-            }, 2000); // 2 second delay to show success message
+          if (data?.error) {
+            setError(data.error);
           }
+
+          if (data?.success) {
+            setSuccess(data.success);
+
+            // Handle manual redirect for cases where auto-login failed
+            if (data.shouldRedirect && data.redirectTo) {
+              setTimeout(() => {
+                router.push(data.redirectTo);
+              }, 2000); // 2 second delay to show success message
+            }
+          }
+
+          // If successful registration with auto-login, NextAuth will redirect automatically
         })
         .catch(() => {
           setError("Client-side error occurred");

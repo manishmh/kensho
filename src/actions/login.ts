@@ -23,20 +23,12 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
   }
 
   try {
-    const result = await signIn('credentials', {
+    // Use the new NextAuth v5 approach with redirect
+    await signIn('credentials', {
       email,
       password,
-      redirect: false,
+      redirectTo: existingUser.onboardingCompleted ? "/" : DEFAULT_LOGIN_REDIRECT || "/onboarding",
     });
-
-    if (result?.error) {
-      return { error: 'Invalid credentials!' };
-    }
-
-    return { 
-      success: 'Login successful!', 
-      redirectTo: DEFAULT_LOGIN_REDIRECT || "/" 
-    };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -45,6 +37,11 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
         default:
           return { error: 'Something went wrong!' };
       }
+    }
+    
+    // Handle redirect errors (these are expected in NextAuth v5)
+    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+      throw error;
     }
     
     return { error: 'Something went wrong during login. Please try again.' };
