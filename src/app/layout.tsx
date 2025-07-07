@@ -2,10 +2,12 @@ import SessionProvider from "@/components/SessionProvider";
 import ToasterProvider from "@/components/ToasterProvider";
 import StoreProvider from "@/redux/StoreProvider";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+// Use system fonts to avoid Google Fonts network issues
+const systemFont = {
+  className: "font-sans", // This uses Tailwind's default font stack
+};
 
 export const metadata: Metadata = {
   title: "Kensho",
@@ -19,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={systemFont.className}>
         <SessionProvider>
           <StoreProvider>
             <div className="min-h-screen bg-white">

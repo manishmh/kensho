@@ -1,5 +1,6 @@
 import { auth } from "@/auth/auth";
 import HomeClientWrapper from "@/components/HomeClientWrapper";
+import RestaurantRecommendationTrigger from "@/components/RestaurantRecommendationTrigger";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
@@ -20,12 +21,15 @@ export default async function Home() {
             Your personalized food ordering experience
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-2">
                 Restaurants Near You
               </h2>
-              <p className="text-gray-600">Coming soon...</p>
+              <p className="text-gray-600">
+                Use the recommendation system below to fetch personalized
+                restaurant suggestions!
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow">
@@ -37,6 +41,11 @@ export default async function Home() {
               <h2 className="text-xl font-semibold mb-2">Your Favorites</h2>
               <p className="text-gray-600">Coming soon...</p>
             </div>
+          </div>
+
+          {/* Restaurant Recommendation System */}
+          <div className="mt-8">
+            <RestaurantRecommendationTrigger />
           </div>
         </div>
       </div>
