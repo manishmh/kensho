@@ -46,6 +46,7 @@ export const PersonalInfoStep = () => {
             </div>
             <input
               type="text"
+              autoFocus
               value={localData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
               placeholder="Enter your name"

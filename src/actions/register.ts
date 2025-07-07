@@ -1,8 +1,7 @@
 'use server';
 
-import { signIn } from '@/auth/auth';
+import { signIn, signOut } from '@/auth/auth';
 import { db } from '@/lib/db';
-import { DEFAULT_LOGIN_REDIRECT } from '@/routes';
 import { RegisterSchema } from '@/schemas';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
@@ -12,6 +11,13 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
   console.log('🔄 Registration started for:', values.email);
   
   try {
+    // Clear any existing session to prevent old data from showing
+    try {
+      await signOut({ redirect: false });
+      console.log('🧹 Cleared existing session');
+    } catch {
+      console.log('ℹ️ No existing session to clear');
+    }
     const validatedFields = RegisterSchema.safeParse(values);
 
     if (!validatedFields.success) {
@@ -40,19 +46,20 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
         name,
         email,
         password: hashedPassword,
+        onboardingCompleted: false, // Explicitly set to false for new users
       },
     });
 
     console.log('✅ User created successfully, attempting auto-login...');
 
-    // Try to sign in the user automatically
+    // Try to sign in the user automatically - new users always go to onboarding
     try {
       await signIn('credentials', {
         email,
         password,
-        redirectTo: DEFAULT_LOGIN_REDIRECT || '/onboarding',
+        redirectTo: '/onboarding', // Force new users to onboarding
       });
-      console.log('✅ Auto-login successful');
+      console.log('✅ Auto-login successful, redirecting to onboarding');
     } catch (error) {
       console.log('⚠️ Auto-login error:', error);
       
