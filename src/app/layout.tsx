@@ -1,3 +1,4 @@
+import SessionProvider from "@/components/SessionProvider";
 import ToasterProvider from "@/components/ToasterProvider";
 import StoreProvider from "@/redux/StoreProvider";
 import type { Metadata } from "next";
@@ -19,12 +20,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <StoreProvider>
-          <div className="min-h-screen bg-white">
-            <ToasterProvider />
-            <main className="min-h-screen">{children}</main>
-          </div>
-        </StoreProvider>
+        <SessionProvider>
+          <StoreProvider>
+            <div className="min-h-screen bg-white">
+              <ToasterProvider />
+              <main className="min-h-screen">{children}</main>
+            </div>
+          </StoreProvider>
+        </SessionProvider>
       </body>
     </html>
   );

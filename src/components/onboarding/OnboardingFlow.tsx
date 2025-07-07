@@ -98,7 +98,7 @@ const OnboardingContent = () => {
         </div>
 
         {/* Progress bar */}
-        <div className="max-w-2xl mx-auto mb-8">
+        <div className="max-w-[1600px] mx-auto mb-8">
           <div className="flex items-center justify-between mb-4">
             {steps.map((step, index) => (
               <div key={index} className="flex items-center">
@@ -130,14 +130,14 @@ const OnboardingContent = () => {
         </div>
 
         {/* Step content */}
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
             <CurrentComponent />
           </div>
         </div>
 
         {/* Navigation buttons */}
-        <div className="max-w-4xl mx-auto mt-8 flex justify-between">
+        <div className="max-w-[1600px] mx-auto mt-8 flex justify-between">
           <button
             onClick={handlePrev}
             disabled={data.currentStep === 0}
