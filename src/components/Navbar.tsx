@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
 import { toast } from "sonner";
 import LocationSelector from "./LocationSelector";
+import UniversalSearch from "./UniversalSearch";
 
 const Navbar: React.FC = () => {
   const router = useRouter();
@@ -44,7 +45,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center h-16 gap-4">
           {/* Logo and Location */}
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center">
@@ -54,9 +55,12 @@ const Navbar: React.FC = () => {
             <LocationSelector />
           </div>
 
+          {/* Universal Search */}
+          <UniversalSearch />
+
           {/* User Profile */}
           {session?.user && (
-            <div className="relative" ref={profileRef}>
+            <div className="relative ml-auto" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
