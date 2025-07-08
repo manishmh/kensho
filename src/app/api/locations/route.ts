@@ -72,8 +72,19 @@ export async function POST(request: NextRequest) {
 
     const location = await db.location.create({
       data: {
-        ...validatedData,
         userId: session.user.id,
+        type: validatedData.type,
+        label: validatedData.label,
+        address: validatedData.address,
+        formattedAddress: validatedData.formattedAddress,
+        placeId: validatedData.placeId,
+        latitude: validatedData.latitude,
+        longitude: validatedData.longitude,
+        city: validatedData.city,
+        state: validatedData.state,
+        country: validatedData.country,
+        postalCode: validatedData.postalCode,
+        isDefault: validatedData.isDefault || false,
       },
     });
 

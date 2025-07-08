@@ -41,19 +41,27 @@ export interface UserOnboardingData {
 
 /**
  * Fetch user's onboarding data from database
+ * @param userEmail - Optional email to fetch specific user's data. If not provided, uses current session user.
  */
-export const getUserOnboardingData = async (): Promise<UserOnboardingData | null> => {
+export const getUserOnboardingData = async (userEmail?: string): Promise<UserOnboardingData | null> => {
   try {
-    const session = await auth();
+    let targetEmail = userEmail;
     
-    if (!session?.user?.email) {
-      console.log('No authenticated user found');
-      return null;
+    // If no email provided, use current session user
+    if (!targetEmail) {
+      const session = await auth();
+      
+      if (!session?.user?.email) {
+        console.log('No authenticated user found');
+        return null;
+      }
+      
+      targetEmail = session.user.email;
     }
 
     // Get user with onboarding data
     const user = await db.user.findUnique({
-      where: { email: session.user.email },
+      where: { email: targetEmail },
       include: {
         onboardingData: true
       }
@@ -102,9 +110,10 @@ export const hasCompletedOnboarding = async (): Promise<boolean> => {
 
 /**
  * Extract user preferences for restaurant filtering
+ * @param userEmail - Optional email to fetch specific user's data. If not provided, uses current session user.
  */
-export const getUserPreferencesForRestaurants = async () => {
-  const onboardingData = await getUserOnboardingData();
+export const getUserPreferencesForRestaurants = async (userEmail?: string) => {
+  const onboardingData = await getUserOnboardingData(userEmail);
   
   if (!onboardingData) {
     return null;

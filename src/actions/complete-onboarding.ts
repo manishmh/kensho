@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth/auth';
 import { db } from '@/lib/db';
+import { knowledgeGraph } from '@/lib/knowledgeGraph';
 import { Prisma } from '@prisma/client';
 
 export const completeOnboarding = async (onboardingData?: Record<string, unknown>) => {
@@ -45,6 +46,16 @@ export const completeOnboarding = async (onboardingData?: Record<string, unknown
       where: { email: session.user.email },
       data: { onboardingCompleted: true }
     });
+
+    // Sync user data to knowledge graph
+    try {
+      console.log('🔄 Syncing user data to knowledge graph...');
+      await knowledgeGraph.createOrUpdateUser(session.user.email);
+      console.log('✅ User data synced to knowledge graph successfully');
+    } catch (kgError) {
+      console.error('⚠️ Failed to sync to knowledge graph (non-blocking):', kgError);
+      // Don't fail the onboarding if knowledge graph sync fails
+    }
 
     return { success: 'Onboarding completed and data saved successfully!' };
   } catch (error) {

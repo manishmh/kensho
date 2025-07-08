@@ -1,3 +1,4 @@
+import { KnowledgeGraphProvider } from "@/components/KnowledgeGraphProvider";
 import SessionProvider from "@/components/SessionProvider";
 import ToasterProvider from "@/components/ToasterProvider";
 import StoreProvider from "@/redux/StoreProvider";
@@ -24,10 +25,12 @@ export default function RootLayout({
       <body className={systemFont.className}>
         <SessionProvider>
           <StoreProvider>
-            <div className="min-h-screen bg-white">
-              <ToasterProvider />
-              <main className="min-h-screen">{children}</main>
-            </div>
+            <KnowledgeGraphProvider>
+              <div className="min-h-screen bg-white">
+                <ToasterProvider />
+                <main className="min-h-screen">{children}</main>
+              </div>
+            </KnowledgeGraphProvider>
           </StoreProvider>
         </SessionProvider>
       </body>
