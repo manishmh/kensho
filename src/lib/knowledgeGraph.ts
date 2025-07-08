@@ -383,7 +383,7 @@ export class KnowledgeGraphService {
         email: userEmail,
         type: behaviorType,
         action,
-        context,
+        context: context || null,
         metadata: metadata ? JSON.stringify(metadata) : null
       });
 
@@ -548,46 +548,241 @@ export class KnowledgeGraphService {
   }
 
   /**
-   * Get semantic context for RAG queries
-   * Returns rich context about user preferences and relationships
+   * Get semantic context for RAG model - optimized for fast retrieval
    */
   async getSemanticContext(userEmail: string): Promise<string> {
+    const profile = await this.getUserProfile(userEmail);
+    
+    if (!profile) {
+      return 'No user profile found';
+    }
+
+    const { user, preferences, dietTypes, recentBehaviors } = profile;
+    
+    // Build semantic context string optimized for LLM understanding
+    const contextParts = [
+      `User Profile: ${user.name || 'Anonymous'}, ${user.age ? user.age + ' years old' : 'age unknown'}`,
+      user.location ? `Location: ${user.location}` : '',
+      dietTypes.length > 0 ? `Diet: ${dietTypes.join(', ')}` : '',
+      
+      // Food preferences
+      preferences.filter((p: any) => p.type === 'food' && p.preference === 'like')
+        .map((p: any) => `Likes ${p.value} (${p.category})`).join(', '),
+      
+      preferences.filter((p: any) => p.type === 'food' && p.preference === 'dislike')
+        .map((p: any) => `Dislikes ${p.value}`).join(', '),
+      
+      // Dietary restrictions
+      preferences.filter((p: any) => p.type === 'dietary')
+        .map((p: any) => `${p.category}: ${p.value}`).join(', '),
+      
+      // Recent behaviors
+      recentBehaviors.length > 0 
+        ? `Recent activity: ${recentBehaviors.slice(0, 5).map((b: any) => b.action).join(', ')}`
+        : ''
+    ];
+
+    return contextParts.filter(part => part.length > 0).join('. ');
+  }
+
+  /**
+   * Generate a comprehensive user pattern summary for RAG context
+   * This function creates a natural language summary of user habits and preferences
+   */
+  async getUserPatternSummary(userId: string): Promise<string> {
     const session = getSession();
 
     try {
-      const profile = await this.getUserProfile(userEmail);
-      if (!profile) return '';
+      // Comprehensive query to gather all user patterns
+      const result = await session.run(`
+        MATCH (u:User)
+        WHERE u.userId = $userId OR u.email = $userId
+        
+        // Get basic profile
+        OPTIONAL MATCH (u)-[:BELONGS_TO_AGE_GROUP]->(ag:AgeGroup)
+        OPTIONAL MATCH (u)-[:LIVES_IN]->(loc:Location)
+        OPTIONAL MATCH (u)-[:FOLLOWS_DIET]->(diet:DietType)
+        
+        // Get preferences with weights
+        OPTIONAL MATCH (u)-[pref_rel:HAS_PREFERENCE]->(pref:Preference)
+        
+        // Get recent behaviors (last 30 days)
+        OPTIONAL MATCH (u)-[:PERFORMED]->(behavior:Behavior)
+        WHERE behavior.timestamp >= datetime() - duration('P30D')
+        
+        // Get frequently visited restaurants
+        OPTIONAL MATCH (u)-[:PERFORMED]->(order_behavior:Behavior {type: 'order'})-[:AT_RESTAURANT]->(rest:Restaurant)
+        WHERE order_behavior.timestamp >= datetime() - duration('P90D')
+        
+        // Get time patterns
+        OPTIONAL MATCH (u)-[:PERFORMED]->(time_behavior:Behavior)
+        WHERE time_behavior.timestamp >= datetime() - duration('P30D')
+        
+        WITH u, 
+             collect(DISTINCT ag.name) as ageGroups,
+             collect(DISTINCT loc.name) as locations,
+             collect(DISTINCT diet.name) as diets,
+             collect(DISTINCT {
+               type: pref.type,
+               category: pref.category,
+               value: pref.value,
+               weight: pref_rel.strength,
+               preference: pref.preference
+             }) as preferences,
+             collect(DISTINCT {
+               type: behavior.type,
+               action: behavior.action,
+               timestamp: behavior.timestamp,
+               metadata: behavior.metadata
+             }) as behaviors,
+             collect(DISTINCT {
+               name: rest.name,
+               cuisine: rest.cuisine,
+               count: count(rest)
+             }) as favoriteRestaurants,
+             collect(DISTINCT {
+               hour: toInteger(datetime(time_behavior.timestamp).hour),
+               dayOfWeek: toInteger(datetime(time_behavior.timestamp).dayOfWeek)
+             }) as timingPatterns
+        
+        RETURN u.name as userName,
+               u.age as userAge,
+               u.email as userEmail,
+               ageGroups,
+               locations,
+               diets,
+               preferences,
+               behaviors,
+               favoriteRestaurants,
+               timingPatterns
+      `, { userId });
 
-      const context = [
-        `User Profile: ${profile.user.name || 'Unknown'}, Age: ${profile.user.age || 'Unknown'}`,
-        `Location: ${profile.locations.join(', ') || 'Unknown'}`,
-        `Diet Types: ${profile.dietTypes.join(', ') || 'None specified'}`,
-        `Food Preferences: ${profile.preferences
-          .filter((p: any) => p.type === 'food' && p.weight >= 4)
-          .map((p: any) => p.value)
-          .join(', ')}`,
-        `Dietary Restrictions: ${profile.preferences
-          .filter((p: any) => p.type === 'dietary')
-          .map((p: any) => p.value)
-          .join(', ')}`,
-        `Health Goals: ${profile.preferences
-          .filter((p: any) => p.type === 'health')
-          .map((p: any) => p.value)
-          .join(', ')}`,
-      ].filter(line => !line.endsWith('Unknown') && !line.endsWith('None specified') && !line.endsWith(': '));
+      if (result.records.length === 0) {
+        return `No user pattern data found for user ID: ${userId}`;
+      }
 
-      return context.join('\n');
+      const record = result.records[0];
+      const userName = record.get('userName') || 'User';
+      const userAge = record.get('userAge');
+      const locations = record.get('locations');
+      const diets = record.get('diets');
+      const preferences = record.get('preferences');
+      const behaviors = record.get('behaviors');
+      const favoriteRestaurants = record.get('favoriteRestaurants');
+      const timingPatterns = record.get('timingPatterns');
+
+      // Build natural language summary
+      const summaryParts: string[] = [];
+
+      // Basic profile
+      summaryParts.push(`${userName} is ${userAge ? `a ${userAge}-year-old` : 'a user'} ${locations.length > 0 ? `from ${locations[0]}` : ''}.`);
+
+      // Dietary preferences
+      if (diets.length > 0) {
+        summaryParts.push(`They follow a ${diets.join(' and ')} diet.`);
+      }
+
+      // Food preferences
+      const likes = preferences.filter((p: any) => p.preference === 'like' && p.type === 'food');
+      const dislikes = preferences.filter((p: any) => p.preference === 'dislike' && p.type === 'food');
+      const restrictions = preferences.filter((p: any) => p.type === 'dietary');
+
+      if (likes.length > 0) {
+        const topLikes = likes
+          .sort((a: any, b: any) => b.weight - a.weight)
+          .slice(0, 5)
+          .map((p: any) => p.value);
+        summaryParts.push(`They particularly enjoy ${topLikes.join(', ')}.`);
+      }
+
+      if (dislikes.length > 0) {
+        const topDislikes = dislikes
+          .slice(0, 3)
+          .map((p: any) => p.value);
+        summaryParts.push(`They avoid ${topDislikes.join(', ')}.`);
+      }
+
+      if (restrictions.length > 0) {
+        const restrictionText = restrictions
+          .map((r: any) => `${r.category}: ${r.value}`)
+          .join(', ');
+        summaryParts.push(`Dietary restrictions include ${restrictionText}.`);
+      }
+
+      // Behavior patterns
+      const orderBehaviors = behaviors.filter((b: any) => b.type === 'order');
+      const searchBehaviors = behaviors.filter((b: any) => b.type === 'search');
+
+      if (orderBehaviors.length > 0) {
+        summaryParts.push(`They have placed ${orderBehaviors.length} orders in the last 30 days.`);
+      }
+
+      // Favorite restaurants
+      if (favoriteRestaurants.length > 0) {
+        const topRestaurants = favoriteRestaurants
+          .sort((a: any, b: any) => b.count - a.count)
+          .slice(0, 3)
+          .map((r: any) => `${r.name} (${r.cuisine})`);
+        summaryParts.push(`Frequently orders from ${topRestaurants.join(', ')}.`);
+      }
+
+      // Timing patterns
+      if (timingPatterns.length > 5) {
+        const hourCounts: { [key: number]: number } = {};
+        const dayCounts: { [key: number]: number } = {};
+
+        timingPatterns.forEach((tp: any) => {
+          hourCounts[tp.hour] = (hourCounts[tp.hour] || 0) + 1;
+          dayCounts[tp.dayOfWeek] = (dayCounts[tp.dayOfWeek] || 0) + 1;
+        });
+
+        // Find peak hours
+        const peakHours = Object.entries(hourCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 2)
+          .map(([hour]) => {
+            const h = parseInt(hour);
+            if (h < 12) return `${h}AM`;
+            else if (h === 12) return '12PM';
+            else return `${h - 12}PM`;
+          });
+
+        if (peakHours.length > 0) {
+          summaryParts.push(`Usually orders around ${peakHours.join(' and ')}.`);
+        }
+
+        // Find peak days
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const peakDays = Object.entries(dayCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 2)
+          .map(([day]) => dayNames[parseInt(day) - 1]);
+
+        if (peakDays.length > 0) {
+          summaryParts.push(`Most active on ${peakDays.join(' and ')}.`);
+        }
+      }
+
+      // Recent search patterns
+      if (searchBehaviors.length > 0) {
+        const recentSearches = searchBehaviors
+          .slice(0, 3)
+          .map((s: any) => s.action);
+        summaryParts.push(`Recently searched for: ${recentSearches.join(', ')}.`);
+      }
+
+      return summaryParts.join(' ');
 
     } catch (error) {
-      console.error('❌ Error getting semantic context:', error);
-      return '';
+      console.error('❌ Error generating user pattern summary:', error);
+      throw error;
     } finally {
       await session.close();
     }
   }
 
   /**
-   * Cleanup old behavior data to maintain performance
+   * Cleanup old behaviors to maintain performance
    */
   async cleanupOldBehaviors(daysToKeep: number = 90): Promise<void> {
     const session = getSession();

@@ -39,7 +39,7 @@ export interface SerpApiRestaurant {
   address?: string;
   open_state?: string;
   hours?: string;
-  operating_hours?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  operating_hours?: any;
   phone?: string;
   website?: string;
   description?: string;
@@ -74,7 +74,7 @@ export interface SerpApiLocalResults {
     address: string;
     open_state: string;
     hours: string;
-    operating_hours: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    operating_hours: any;
     phone: string;
     website: string;
     description: string;

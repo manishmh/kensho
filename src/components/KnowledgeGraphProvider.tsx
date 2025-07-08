@@ -2,7 +2,13 @@
 
 import { useKnowledgeGraph } from "@/hooks/useKnowledgeGraph";
 import { usePathname } from "next/navigation";
-import React, { createContext, ReactNode, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
 
 interface KnowledgeGraphContextType {
   recordBehavior: (
@@ -28,6 +34,7 @@ export function KnowledgeGraphProvider({
   children,
 }: KnowledgeGraphProviderProps) {
   const pathname = usePathname();
+  const lastTrackedPath = useRef<string | null>(null);
   const {
     recordBehavior: recordBehaviorHook,
     syncUserData: syncUserDataHook,
@@ -35,14 +42,26 @@ export function KnowledgeGraphProvider({
     error,
   } = useKnowledgeGraph();
 
-  // Auto-track page views
+  // Auto-track page views (with throttling to prevent excessive calls)
   useEffect(() => {
-    if (pathname) {
-      recordBehaviorHook("view", "page_view", pathname, {
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        referrer: document.referrer,
-      }).catch(console.error);
+    if (pathname && pathname !== lastTrackedPath.current) {
+      lastTrackedPath.current = pathname;
+
+      // Debounce page view tracking
+      const timeoutId = setTimeout(() => {
+        recordBehaviorHook("view", "page_view", pathname, {
+          timestamp: new Date().toISOString(),
+          userAgent:
+            typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+          referrer:
+            typeof document !== "undefined" ? document.referrer : "unknown",
+        }).catch((error) => {
+          console.warn("Failed to track page view:", error);
+          // Don't throw or show user-facing errors for tracking failures
+        });
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timeoutId);
     }
   }, [pathname, recordBehaviorHook]);
 
@@ -59,7 +78,8 @@ export function KnowledgeGraphProvider({
         pathname,
       });
     } catch (error) {
-      console.error("Failed to record behavior:", error);
+      console.warn("Failed to record behavior:", error);
+      // Silent fail - don't let tracking errors affect user experience
     }
   };
 
@@ -67,7 +87,8 @@ export function KnowledgeGraphProvider({
     try {
       await syncUserDataHook(additionalData);
     } catch (error) {
-      console.error("Failed to sync user data:", error);
+      console.warn("Failed to sync user data:", error);
+      // Silent fail - don't let sync errors affect user experience
     }
   };
 
@@ -105,11 +126,18 @@ export function withBehaviorTracking<T extends Record<string, any>>(
     const { recordBehavior } = useKnowledgeGraphContext();
 
     useEffect(() => {
-      recordBehavior(behaviorType, action, undefined, {
-        componentName: Component.displayName || Component.name,
-        props: Object.keys(props),
-      });
-    }, [recordBehavior]);
+      // Use a timeout to avoid blocking component rendering
+      const timeoutId = setTimeout(() => {
+        recordBehavior(behaviorType, action, undefined, {
+          componentName: Component.displayName || Component.name,
+          props: Object.keys(props),
+        }).catch((error) => {
+          console.warn("Component behavior tracking failed:", error);
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }, [recordBehavior, props]);
 
     return <Component {...props} />;
   };
@@ -123,6 +151,8 @@ export function useBehaviorTracker() {
     recordBehavior("search", "search_query", query, {
       filters,
       resultsCount: results,
+    }).catch((error) => {
+      console.warn("Search tracking failed:", error);
     });
   };
 
@@ -134,6 +164,8 @@ export function useBehaviorTracker() {
     recordBehavior("view", "restaurant_view", restaurantId, {
       restaurantName,
       source,
+    }).catch((error) => {
+      console.warn("Restaurant view tracking failed:", error);
     });
   };
 
@@ -146,6 +178,8 @@ export function useBehaviorTracker() {
         price: item.price,
       })),
       total,
+    }).catch((error) => {
+      console.warn("Order tracking failed:", error);
     });
   };
 
@@ -158,6 +192,8 @@ export function useBehaviorTracker() {
       oldValue,
       newValue,
       changeType: oldValue ? "update" : "create",
+    }).catch((error) => {
+      console.warn("Preference tracking failed:", error);
     });
   };
 
@@ -173,7 +209,9 @@ export function useBehaviorTracker() {
       {
         restaurantId,
       }
-    );
+    ).catch((error) => {
+      console.warn("Recommendation tracking failed:", error);
+    });
   };
 
   return {

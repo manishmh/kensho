@@ -10,14 +10,11 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-];
-
 export default tseslint.config(
   {
     ignores: ["src/generated/**"],
   },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
     rules: {
@@ -33,6 +30,5 @@ export default tseslint.config(
       "@typescript-eslint/no-implied-eval": "off",
       "@typescript-eslint/no-misused-promises": "off",
     },
-  },
-  eslintConfig
+  }
 );

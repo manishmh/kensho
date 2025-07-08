@@ -14,7 +14,7 @@ import { toast } from "sonner";
 interface RecommendationStatus {
   status: "idle" | "checking" | "fetching" | "success" | "error";
   message: string;
-  data?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  data?: any;
 }
 
 const RestaurantRecommendationTrigger: React.FC = () => {

@@ -1,3 +1,4 @@
+import { AuthenticatedChatButton } from "@/components/AuthenticatedChatButton";
 import { KnowledgeGraphProvider } from "@/components/KnowledgeGraphProvider";
 import SessionProvider from "@/components/SessionProvider";
 import ToasterProvider from "@/components/ToasterProvider";
@@ -30,6 +31,7 @@ export default function RootLayout({
                 <ToasterProvider />
                 <main className="min-h-screen">{children}</main>
               </div>
+              <AuthenticatedChatButton />
             </KnowledgeGraphProvider>
           </StoreProvider>
         </SessionProvider>
